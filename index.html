@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple HTML Checker</title>
+</head>
+<body>
+
+<textarea id="htmlInput" rows="12" cols="60"
+  placeholder="Paste HTML here..."></textarea>
+<br><br>
+
+<button onclick="checkHTML()">Check HTML</button>
+
+<pre id="result"></pre>
+
+<script>
+function checkHTML() {
+  const html = document.getElementById("htmlInput").value;
+  const result = document.getElementById("result");
+
+  const voidTags = new Set([
+    "area", "base", "br", "col", "embed",
+    "hr", "img", "input", "link", "meta",
+    "param", "source", "track", "wbr"
+  ]);
+
+  const stack = [];
+  const errors = [];
+
+  // Find HTML tags
+  const tags = html.match(/<\/?[a-zA-Z][^>]*>/g) || [];
+
+  for (const tag of tags) {
+    // Ignore comments
+    if (tag.startsWith("<!--")) continue;
+
+    const closing = tag.startsWith("</");
+    const match = tag.match(/^<\/?\s*([a-zA-Z][\w-]*)/);
+
+    if (!match) continue;
+
+    const name = match[1].toLowerCase();
+
+    // Ignore self-closing and void elements
+    if (tag.endsWith("/>") || voidTags.has(name)) {
+      continue;
+    }
+
+    if (closing) {
+      if (stack.length === 0) {
+        errors.push(`Unexpected closing tag: </${name}>`);
+      } else {
+        const last = stack.pop();
+
+        if (last !== name) {
+          errors.push(
+            `Mismatched tag: expected </${last}> but found </${name}>`
+          );
+        }
+      }
+    } else {
+      stack.push(name);
+    }
+  }
+
+  // Check for unclosed tags
+  while (stack.length > 0) {
+    errors.push(`Unclosed tag: <${stack.pop()}>`);
+  }
+
+  if (errors.length === 0) {
+    result.textContent = "✓ HTML looks OK!";
+    result.style.color = "green";
+  } else {
+    result.textContent = "✗ Errors found:\n\n" + errors.join("\n");
+    result.style.color = "red";
+  }
+}
+</script>
+
+</body>
+</html>
